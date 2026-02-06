@@ -1,13 +1,13 @@
 """
-Nexa Search Agent Engine
+Nexa Search Agent Engine - Fixed for Latest LangChain
 Powered by LangChain + Groq with LangSmith tracing
 """
 
 import os
 from typing import Optional, List, Dict, Any
 from langchain_groq import ChatGroq
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_community.tools import (
     DuckDuckGoSearchRun,
     WikipediaQueryRun,
@@ -17,8 +17,6 @@ from langchain_community.utilities import (
     WikipediaAPIWrapper,
     ArxivAPIWrapper
 )
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 # LangSmith Configuration (Optional but recommended)
 LANGSMITH_ENABLED = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
@@ -43,7 +41,7 @@ class NexaSearchEngine:
     def _initialize_llm(self) -> ChatGroq:
         """
         Initialize the LLM with the best available free model
-        Priority: Llama 3.1 70B > Mixtral > Llama 3 70B
+        Priority: Llama 3.3 70B > Llama 3.1 70B > Mixtral > Llama 3 70B
         """
         models = [
             "llama-3.3-70b-versatile",  # Latest and most powerful
@@ -121,47 +119,30 @@ class NexaSearchEngine:
     
     def _initialize_agent(self) -> AgentExecutor:
         """
-        Initialize the ReAct agent with custom prompt
+        Initialize the tool-calling agent (compatible with latest LangChain)
         """
-        # Enhanced ReAct prompt template
-        template = """You are Nexa, an intelligent search assistant that helps users find accurate information.
+        # Create prompt template for tool-calling agent
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are Nexa, an intelligent search assistant that helps users find accurate information.
 
-You have access to these tools:
-{tools}
+You have access to multiple search tools. Choose the most appropriate tool(s) based on the user's query:
 
-Use the following format:
-
-Question: the input question you must answer
-Thought: think about what information you need and which tool to use
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now have enough information to answer
-Final Answer: the final answer to the original input question
-
-Guidelines:
 - For recent news/events, use web_search first
-- For facts/concepts/history, try wikipedia first
+- For facts/concepts/history, try wikipedia first  
 - For research/academic topics, check arxiv_search
 - You can use multiple tools to cross-reference information
+
+Guidelines:
 - Always cite sources when available
 - Be concise but comprehensive
 - If you don't find good results, try rephrasing the query
-
-Question: {input}
-Thought: {agent_scratchpad}"""
-
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["input", "agent_scratchpad"],
-            partial_variables={
-                "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
-                "tool_names": ", ".join([tool.name for tool in self.tools])
-            }
-        )
+- Provide clear, well-structured answers"""),
+            ("human", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ])
         
-        agent = create_react_agent(
+        # Create the agent
+        agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=prompt
@@ -189,10 +170,13 @@ Thought: {agent_scratchpad}"""
             if "intermediate_steps" in result:
                 for step in result["intermediate_steps"]:
                     if len(step) >= 2:
-                        tool_name = step[0].tool if hasattr(step[0], 'tool') else "Unknown"
+                        action = step[0]
+                        tool_name = action.tool if hasattr(action, 'tool') else "Unknown"
+                        tool_input = str(action.tool_input) if hasattr(action, 'tool_input') else ""
+                        
                         sources.append({
                             "tool": tool_name,
-                            "query": str(step[0].tool_input) if hasattr(step[0], 'tool_input') else ""
+                            "query": tool_input
                         })
             
             return {
@@ -202,11 +186,12 @@ Thought: {agent_scratchpad}"""
             }
             
         except Exception as e:
+            error_msg = str(e)
             return {
-                "answer": f"Search error: {str(e)}",
+                "answer": f"I encountered an error while searching: {error_msg}",
                 "sources": [],
                 "success": False,
-                "error": str(e)
+                "error": error_msg
             }
 
 # Global instance
