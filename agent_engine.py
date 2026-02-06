@@ -15,8 +15,8 @@ from langchain_community.utilities import (
     WikipediaAPIWrapper,
     ArxivAPIWrapper
 )
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.prompts import PromptTemplate
+from langchain.agents import AgentExecutor, create_react_agent
 
 # LangSmith Configuration (Optional)
 LANGSMITH_ENABLED = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
@@ -101,22 +101,29 @@ class NexaSearchEngine:
     
     def _initialize_agent(self) -> AgentExecutor:
         """
-        Initialize the agent
+        Initialize the agent using ReAct agent (compatible with Groq)
         """
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are Nexa, an intelligent search assistant.
+        prompt = PromptTemplate.from_template("""Answer the following questions as best you can. You have access to the following tools:
 
-Available tools:
-- web_search: For current news and real-time information
-- wikipedia: For encyclopedic knowledge and facts
-- arxiv_search: For academic papers and research
+{tools}
 
-Choose the right tool based on the query and provide clear, accurate answers."""),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}""")
         
-        agent = create_openai_tools_agent(
+        agent = create_react_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=prompt
