@@ -4,7 +4,7 @@ Features: History, Export, Filters, Streaming, Multi-language, Mobile-responsive
 """
 
 import streamlit as st
-from agent_engine_enhanced import (
+from agent_engine import (
     run_search, 
     get_related_questions, 
     clear_cache,
