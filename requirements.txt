@@ -1,20 +1,16 @@
 # Core Framework
 streamlit>=1.31.0
 
-# LangChain Ecosystem (Fixed versions for compatibility)
-langchain>=0.3.0
-langchain-core>=0.3.0
-langchain-community>=0.3.0
-langchain-groq>=0.2.0
+# LangChain - Using stable versions
+langchain==0.1.20
+langchain-core==0.1.52
+langchain-community==0.0.38
+langchain-groq==0.1.5
 
 # Search Tools
-duckduckgo-search>=5.0.0
+duckduckgo-search>=4.0.0
 wikipedia>=1.4.0
 arxiv>=2.1.0
 
-# LangSmith (Optional - for tracing)
-langsmith>=0.1.0
-
 # Utilities
 python-dotenv>=1.0.0
-requests>=2.31.0
