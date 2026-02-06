@@ -1,0 +1,28 @@
+body {
+    background-color: #0e1117;
+    color: #e5e7eb;
+}
+
+.search-box {
+    background: #111827;
+    padding: 1.2rem;
+    border-radius: 14px;
+    border: 1px solid #1f2937;
+}
+
+.result-card {
+    background: #0b1220;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-top: 1rem;
+    border: 1px solid #1f2937;
+}
+
+.badge {
+    display: inline-block;
+    background: #1f2937;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-right: 6px;
+}
