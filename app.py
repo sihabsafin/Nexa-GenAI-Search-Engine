@@ -541,13 +541,14 @@ def main():
         """, unsafe_allow_html=True)
     
   # Footer
-st.markdown("""
-<div class="footer">
-    Developed by Sihab Safin
-    <br>
-    <small>Powered by Llama 3.1 70B • Open Source • Privacy Focused</small>
-</div>
-""", unsafe_allow_html=True)
+ # Footer
+    st.markdown("""
+    <div class="footer">
+        Developed by Sihab Safin 
+        <br>
+        <small>Powered by Llama 3.1 70B • Open Source • Privacy Focused</small>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
