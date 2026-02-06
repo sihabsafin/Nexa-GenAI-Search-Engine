@@ -103,22 +103,26 @@ class NexaSearchEngine:
         """
         Initialize the agent using ReAct agent (compatible with Groq)
         """
-        prompt = PromptTemplate.from_template("""Answer the following questions as best you can. You have access to the following tools:
+        prompt = PromptTemplate.from_template("""You are Nexa, an intelligent search assistant. Answer questions using the available tools when needed.
 
+Available tools:
 {tools}
 
-Use the following format:
+IMPORTANT INSTRUCTIONS:
+- Use tools ONLY when you need current/specific information
+- For general knowledge questions, answer directly without using tools
+- After getting tool results, immediately provide the Final Answer
+- Keep tool usage to 1-2 calls maximum
 
+Format:
 Question: the input question you must answer
-Thought: you should always think about what to do
+Thought: do I need to use a tool or can I answer directly?
 Action: the action to take, should be one of [{tool_names}]
 Action Input: the input to the action
 Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
+... (repeat only if absolutely necessary)
 Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-Begin!
+Final Answer: provide a clear, comprehensive answer
 
 Question: {input}
 Thought:{agent_scratchpad}""")
@@ -134,7 +138,9 @@ Thought:{agent_scratchpad}""")
             tools=self.tools,
             verbose=False,
             handle_parsing_errors=True,
-            max_iterations=6,
+            max_iterations=10,
+            max_execution_time=60,
+            early_stopping_method="generate",
             return_intermediate_steps=True
         )
     
